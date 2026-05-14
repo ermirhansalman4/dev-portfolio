@@ -139,6 +139,13 @@ export const toggleConnection = async (targetUserId) => {
     }
 };
 
+// Takip Edilenleri Getir
+export const getUserConnections = async (uid) => {
+    const q = query(collection(db, "connections"), where("followerId", "==", uid));
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
 // Akıllı Keşfet Algoritması
 export const getDiscoveryProjects = async (filterType = 'popular') => {
     const user = auth.currentUser;

@@ -97,7 +97,7 @@
                                     const nowConnected = await toggleConnection(uid);
                                     renderConnBtn(nowConnected);
                                 } catch (err) {
-                                    alert(err.message);
+                                    showToast(err.message, "error");
                                 }
                             });
                         };

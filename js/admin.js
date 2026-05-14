@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetId === 'view-dashboard') loadDashboardStats().catch(console.error);
                 if (targetId === 'view-projects') loadAdminProjects(uid).catch(console.error);
                 if (targetId === 'view-blog') loadAdminBlog(uid).catch(console.error);
+                if (targetId === 'view-connections') loadAdminConnections(uid).catch(console.error);
             }
         }
     };
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Mevcut hash'e göre görünümü ayarla
             const hash = window.location.hash.replace('#', '');
-            if (hash && ['dashboard', 'projects', 'blog'].includes(hash)) {
+            if (hash && ['dashboard', 'projects', 'blog', 'connections'].includes(hash)) {
                 window.switchAdminView('view-' + hash);
             } else {
                 window.switchAdminView('view-dashboard');
@@ -350,6 +351,53 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (currentUser) loadAdminBlog(currentUser.uid);
                         loadDashboardStats();
                         showToast("Yazı başarıyla silindi.", "success");
+                    }
+                });
+            });
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="3">Yükleme hatası.</td></tr>';
+        }
+    }
+
+    async function loadAdminConnections(uid) {
+        if (!uid) return;
+        const tbody = document.getElementById('admin-connections-list');
+        if (!tbody) return;
+
+        try {
+            const connections = await getUserConnections(uid);
+            tbody.innerHTML = '';
+            if (connections.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">Henüz bir bağlantınız yok.</td></tr>';
+                return;
+            }
+
+            for (const conn of connections) {
+                // Get user info for name
+                const userSnap = await getDoc(doc(db, "users", conn.followedId));
+                const userData = userSnap.exists() ? userSnap.data() : { displayName: 'Bilinmeyen Kullanıcı' };
+                
+                const tr = document.createElement('tr');
+                const dateStr = conn.createdAt ? new Date(conn.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : '-';
+                tr.innerHTML = `
+                <td><a href="profile.html?uid=${conn.followedId}" style="color: var(--primary-color); font-weight: 600;">${userData.displayName || userData.email}</a></td>
+                <td>${dateStr}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline btn-delete-conn" data-target="${conn.followedId}"><i class="fas fa-user-minus"></i> Bağlantıyı Kes</button>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            }
+
+            // Delete handlers
+            document.querySelectorAll('.btn-delete-conn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    if (await showConfirm("Bağlantıyı Kes", "Bu kişiyle bağlantınızı kesmek istediğinize emin misiniz?")) {
+                        const targetId = e.currentTarget.getAttribute('data-target');
+                        await toggleConnection(targetId);
+                        loadAdminConnections(uid);
+                        showToast("Bağlantı kesildi.", "info");
                     }
                 });
             });
