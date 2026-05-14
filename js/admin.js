@@ -295,12 +295,14 @@ async function loadAdminProjects(uid) {
         // Delete handlers
         document.querySelectorAll('.btn-delete-project').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                if(confirm("Bu projeyi silmek istediğinize emin misiniz?")) {
+                const confirmed = await showConfirm("Projeyi Sil", "Bu projeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.");
+                if(confirmed) {
                     const id = e.currentTarget.getAttribute('data-id');
                     await deleteProject(id);
                     const currentUser = auth.currentUser;
                     if(currentUser) loadAdminProjects(currentUser.uid);
                     loadDashboardStats();
+                    showToast("Proje başarıyla silindi.", "success");
                 }
             });
         });
@@ -339,12 +341,14 @@ async function loadAdminBlog(uid) {
         // Delete handlers
         document.querySelectorAll('.btn-delete-post').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                if(confirm("Bu yazıyı silmek istediğinize emin misiniz?")) {
+                const confirmed = await showConfirm("Yazıyı Sil", "Bu blog yazısını silmek istediğinize emin misiniz?");
+                if(confirmed) {
                     const id = e.currentTarget.getAttribute('data-id');
                     await deletePost(id);
                     const currentUser = auth.currentUser;
                     if(currentUser) loadAdminBlog(currentUser.uid);
                     loadDashboardStats();
+                    showToast("Yazı başarıyla silindi.", "success");
                 }
             });
         });

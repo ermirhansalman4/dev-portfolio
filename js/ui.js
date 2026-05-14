@@ -226,3 +226,39 @@ function initNotifications(uid) {
         `).join('');
     });
 }
+
+// Global Custom Confirm
+window.showConfirm = (title, message) => {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        overlay.innerHTML = `
+            <div class="confirm-modal glass">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="modal-actions">
+                    <button id="confirm-no" class="btn btn-outline btn-sm">Vazgeç</button>
+                    <button id="confirm-yes" class="btn btn-primary btn-sm">Evet, Sil</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        // Disable scroll
+        document.body.style.overflow = 'hidden';
+
+        const close = (result) => {
+            document.body.removeChild(overlay);
+            document.body.style.overflow = 'auto';
+            resolve(result);
+        };
+
+        document.getElementById('confirm-yes').addEventListener('click', () => close(true));
+        document.getElementById('confirm-no').addEventListener('click', () => close(false));
+        overlay.addEventListener('click', (e) => {
+            if(e.target === overlay) close(false);
+        });
+    });
+};
