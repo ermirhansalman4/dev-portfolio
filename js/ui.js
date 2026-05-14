@@ -155,13 +155,18 @@ function initCustomCursor() {
     document.body.appendChild(follower);
     document.body.appendChild(glow);
 
+    let requestRef;
     document.addEventListener('mousemove', (e) => {
-        const x = e.clientX;
-        const y = e.clientY;
+        if (requestRef) cancelAnimationFrame(requestRef);
         
-        cursor.style.transform = `translate(${x - 5}px, ${y - 5}px)`;
-        follower.style.transform = `translate(${x - 20}px, ${y - 20}px)`;
-        glow.style.transform = `translate(${x - 300}px, ${y - 300}px)`;
+        requestRef = requestAnimationFrame(() => {
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            cursor.style.transform = `translate3d(${x - 5}px, ${y - 5}px, 0)`;
+            follower.style.transform = `translate3d(${x - 20}px, ${y - 20}px, 0)`;
+            glow.style.transform = `translate3d(${x - 300}px, ${y - 300}px, 0)`;
+        });
     });
 
     // İnteraktif öğelere gelince imleci büyüt
@@ -175,8 +180,8 @@ function initCustomCursor() {
     
     updateInteractiveElements();
     
-    // Dinamik içerikler için (yorumlar vb.) periyodik kontrol
-    setInterval(updateInteractiveElements, 2000);
+    // Dinamik içerikler için daha seyrek kontrol
+    setInterval(updateInteractiveElements, 5000);
 }
 
 // Real-time Notifications Listener

@@ -69,14 +69,12 @@
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const errorMsg = document.getElementById('login-error');
             
             try {
                 await login(email, password);
-                // Auth state listener panele yönlendirecek
+                showToast("Giriş başarılı! Yönlendiriliyorsunuz...", "success");
             } catch (error) {
-                errorMsg.textContent = "Giriş başarısız. Bilgilerinizi kontrol edin.";
-                errorMsg.style.display = 'block';
+                showToast("Giriş başarısız. Lütfen bilgilerinizi kontrol edin.", "error");
                 btn.disabled = false;
                 btn.textContent = 'Giriş Yap';
             }

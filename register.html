@@ -78,10 +78,9 @@
             
             try {
                 await register(email, password, name);
-                // Auth state listener panele yönlendirecek
+                showToast("Hesabınız başarıyla oluşturuldu!", "success");
             } catch (error) {
-                errorMsg.textContent = "Kayıt başarısız. " + error.message;
-                errorMsg.style.display = 'block';
+                showToast("Kayıt başarısız: " + error.message, "error");
                 btn.disabled = false;
                 btn.textContent = 'Kayıt Ol';
             }
