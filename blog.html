@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Geliştirici Portföy</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <!-- Dinamik linkler ui.js ile gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container page-content">
+        <h1 class="page-title gradient-text">Blog Yazıları</h1>
+        <div id="blog-container" class="blog-grid">
+            <div class="loader">Yükleniyor...</div>
+        </div>
+    </main>
+
+    <footer class="footer glass">
+        <div class="container">
+            <p>&copy; <span id="year"></span> Geliştirici Portföy. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module">
+        import { getAllPosts } from './js/blog.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('blog-container');
+            try {
+                const posts = await getAllPosts();
+                container.innerHTML = '';
+                if(posts.length === 0) {
+                    container.innerHTML = '<p>Henüz yazı bulunmuyor.</p>';
+                    return;
+                }
+                
+                posts.forEach(p => {
+                    const dateStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : '';
+                    container.innerHTML += `
+                        <article class="blog-card glass hover-up">
+                            <div class="blog-card-body">
+                                <div class="d-flex justify-between align-center mb-2">
+                                    <span class="blog-date"><i class="far fa-calendar"></i> ${dateStr}</span>
+                                    <span style="font-size: 0.8rem; color: var(--primary-color);">Yazar: ${p.authorName || 'Anonim'}</span>
+                                </div>
+                                <h3><a href="post-detail.html?slug=${p.slug}">${p.title}</a></h3>
+                                <p>${p.content.substring(0, 150)}...</p>
+                                <div class="tags mt-3">
+                                    ${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                });
+            } catch (err) {
+                console.error("Yazılar yüklenirken hata:", err);
+                container.innerHTML = '<p>Yazılar yüklenemedi.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

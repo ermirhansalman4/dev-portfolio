@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol | Topluluk Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <!-- Dinamik linkler ui.js ile gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="admin-login-container">
+        <div class="login-card glass">
+            <h2 class="gradient-text text-center mb-4">Kayıt Ol</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Ad Soyad (veya Kullanıcı Adı)</label>
+                    <input type="text" id="reg-name" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="reg-email" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Şifre (En az 6 karakter)</label>
+                    <input type="password" id="reg-password" required minlength="6" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Kayıt Ol</button>
+                <div id="reg-error" class="error-msg mt-3 text-center" style="display: none; color: var(--danger);"></div>
+            </form>
+            <p class="text-center mt-4">Zaten hesabınız var mı? <a href="login.html" class="gradient-text">Giriş Yap</a></p>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module">
+        import { register, listenAuthState } from './js/auth.js';
+
+        // Eğer kullanıcı zaten giriş yapmışsa panele yönlendir
+        listenAuthState((user) => {
+            if(user) {
+                window.location.href = 'admin.html';
+            }
+        });
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = 'Kayıt olunuyor...';
+            
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const errorMsg = document.getElementById('reg-error');
+            
+            try {
+                await register(email, password, name);
+                // Auth state listener panele yönlendirecek
+            } catch (error) {
+                errorMsg.textContent = "Kayıt başarısız. " + error.message;
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Kayıt Ol';
+            }
+        });
+    </script>
+</body>
+</html>

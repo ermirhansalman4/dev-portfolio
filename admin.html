@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kullanıcı Paneli | Topluluk Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <div id="admin-dashboard" class="admin-layout" style="display: flex;">
+        <aside class="admin-sidebar glass">
+            <div class="sidebar-header">
+                <h2>Kullanıcı<span>Paneli</span></h2>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="#dashboard" class="active" data-target="view-dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#projects" data-target="view-projects"><i class="fas fa-project-diagram"></i> Projeler</a></li>
+                <li><a href="#blog" data-target="view-blog"><i class="fas fa-pen-nib"></i> Blog</a></li>
+                <li><a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a></li>
+            </ul>
+        </aside>
+
+        <main class="admin-main">
+            <header class="admin-header glass">
+                <div class="header-right">
+                    <button id="theme-toggle" class="icon-btn"><i class="fas fa-moon"></i></button>
+                    <a href="index.html" class="btn btn-outline btn-sm">Siteye Dön</a>
+                </div>
+            </header>
+
+            <div class="admin-content">
+                <!-- Dashboard Görünümü -->
+                <div id="view-dashboard" class="admin-view active">
+                    <h2 class="mb-4">Dashboard</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card glass">
+                            <i class="fas fa-project-diagram stat-icon"></i>
+                            <div class="stat-info">
+                                <h3>Projeler</h3>
+                                <p id="stat-projects">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <i class="fas fa-pen-nib stat-icon"></i>
+                            <div class="stat-info">
+                                <h3>Yazılar</h3>
+                                <p id="stat-blog">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <i class="fas fa-users stat-icon"></i>
+                            <div class="stat-info">
+                                <h3>Ziyaretçiler</h3>
+                                <p id="stat-visitors">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container glass mt-4">
+                        <canvas id="visitorsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Projeler Görünümü -->
+                <div id="view-projects" class="admin-view" style="display: none;">
+                    <div class="d-flex justify-between align-center mb-4">
+                        <h2>Projeler Yönetimi</h2>
+                        <button id="btn-new-project" class="btn btn-primary"><i class="fas fa-plus"></i> Yeni Ekle</button>
+                    </div>
+                    
+                    <form id="project-form" class="glass form-card mb-4" style="display: none;">
+                        <h3 id="project-form-title">Yeni Proje</h3>
+                        <input type="hidden" id="project-id">
+                        <div class="form-group">
+                            <label>Başlık</label>
+                            <input type="text" id="project-title" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Açıklama</label>
+                            <div class="ai-input-group">
+                                <textarea id="project-description" required class="form-control" rows="4"></textarea>
+                                <button type="button" id="btn-ai-desc" class="btn btn-outline btn-sm mt-2"><i class="fas fa-robot"></i> AI Açıklama Üret</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Kapak Görseli URL</label>
+                            <input type="url" id="project-image-url" class="form-control" placeholder="Görsel URL'si (Örn: https://...)">
+                        </div>
+                        <div class="form-group">
+                            <label>Proje Videosu (YouTube / Vimeo URL vb.)</label>
+                            <input type="url" id="project-video-url" class="form-control" placeholder="Örn: https://youtube.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label>Kaynak Dosya Bağlantısı (GitHub / Drive URL vb.)</label>
+                            <input type="url" id="project-file-url" class="form-control" placeholder="Örn: https://github.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label>Teknolojiler (virgülle ayırın)</label>
+                            <input type="text" id="project-techs" class="form-control" placeholder="HTML, CSS, React...">
+                        </div>
+                        <div class="form-group">
+                            <label>GitHub URL</label>
+                            <input type="url" id="project-github" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Live URL</label>
+                            <input type="url" id="project-live" class="form-control">
+                        </div>
+                        <div class="form-actions mt-3">
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                            <button type="button" id="btn-cancel-project" class="btn btn-outline">İptal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive glass">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Başlık</th>
+                                    <th>Tarih</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-projects-list">
+                                <tr><td colspan="3">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Blog Görünümü -->
+                <div id="view-blog" class="admin-view" style="display: none;">
+                    <div class="d-flex justify-between align-center mb-4">
+                        <h2>Blog Yönetimi</h2>
+                        <button id="btn-new-post" class="btn btn-primary"><i class="fas fa-plus"></i> Yeni Yazı</button>
+                    </div>
+
+                    <form id="post-form" class="glass form-card mb-4" style="display: none;">
+                        <h3 id="post-form-title">Yeni Yazı</h3>
+                        <input type="hidden" id="post-id">
+                        <div class="form-group">
+                            <label>Başlık</label>
+                            <input type="text" id="post-title" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>İçerik (HTML destekli)</label>
+                            <textarea id="post-content" required class="form-control" rows="10"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Etiketler (virgülle ayırın)</label>
+                            <input type="text" id="post-tags" class="form-control" placeholder="Yazılım, İpuçları...">
+                        </div>
+                        <div class="form-actions mt-3">
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                            <button type="button" id="btn-cancel-post" class="btn btn-outline">İptal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive glass">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Başlık</th>
+                                    <th>Tarih</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-blog-list">
+                                <tr><td colspan="3">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

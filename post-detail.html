@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yazı | Geliştirici Portföy</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <!-- Dinamik linkler ui.js ile gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container page-content">
+        <article id="post-detail" class="detail-container glass post-container">
+            <div class="loader">Yazı yükleniyor...</div>
+        </article>
+    </main>
+
+    <footer class="footer glass">
+        <div class="container">
+            <p>&copy; <span id="year"></span> Geliştirici Portföy. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module">
+        import { getPostBySlug } from './js/blog.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug');
+            const container = document.getElementById('post-detail');
+            
+            if(!slug) {
+                container.innerHTML = '<p>Yazı bulunamadı.</p>';
+                return;
+            }
+
+            try {
+                const post = await getPostBySlug(slug);
+                if(!post) {
+                    container.innerHTML = '<p>Yazı bulunamadı.</p>';
+                    return;
+                }
+                
+                document.title = `${post.title} | Geliştirici Portföy`;
+                
+                const dateStr = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : '';
+                
+                container.innerHTML = `
+                    <h1 class="gradient-text">${post.title}</h1>
+                    <div class="post-meta mb-4 d-flex justify-between align-center">
+                        <span class="blog-date"><i class="far fa-calendar"></i> ${dateStr}</span>
+                        <span style="color: var(--primary-color);">Yazar: ${post.authorName || 'Anonim'}</span>
+                    </div>
+                    <div class="tags mb-4">
+                        ${(post.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                    </div>
+                    <div class="post-content">
+                        ${post.content.replace(/\n/g, '<br>')}
+                    </div>
+                `;
+            } catch (err) {
+                console.error("Yazı yüklenirken hata:", err);
+                container.innerHTML = '<p>Yazı yüklenemedi.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

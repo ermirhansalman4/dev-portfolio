@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proje Detayı | Geliştirici Portföy</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <!-- Dinamik linkler ui.js ile gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container page-content">
+        <div id="project-detail" class="project-detail-container fade-in">
+            <div class="loader">Yükleniyor...</div>
+        </div>
+    </main>
+
+    <footer class="footer glass">
+        <div class="container">
+            <p>&copy; <span id="year"></span> Geliştirici Portföy. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module">
+        import { getProjectBySlug, toggleLike, addComment, getProjectComments } from './js/projects.js';
+        import { listenAuthState } from './js/auth.js';
+        import { auth, db } from './js/firebase.js';
+        import { doc, getDoc } from 'firebase/firestore';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug');
+            const container = document.getElementById('project-detail');
+            
+            if(!slug) {
+                container.innerHTML = '<p>Proje bulunamadı.</p>';
+                return;
+            }
+
+            try {
+                const project = await getProjectBySlug(slug);
+                if(!project) {
+                    container.innerHTML = '<p>Proje bulunamadı.</p>';
+                    return;
+                }
+                
+                document.title = `${project.title} | Geliştirici Portföy`;
+                
+                container.innerHTML = `
+                    <div class="detail-header">
+                        <h1 class="gradient-text">${project.title}</h1>
+                        <p style="color: var(--primary-color); margin-top: 10px;">Yükleyen: <a href="profile.html?uid=${project.authorId}" style="color: var(--primary-color); font-weight: 600;">${project.authorName || 'Anonim'}</a></p>
+                        <div class="detail-links mt-3">
+                            ${project.githubUrl ? `<a href="${project.githubUrl}" target="_blank" class="btn btn-outline"><i class="fab fa-github"></i> GitHub</a>` : ''}
+                            ${project.liveUrl ? `<a href="${project.liveUrl}" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Canlı Görüntüle</a>` : ''}
+                        </div>
+                        <div class="extra-links mt-3" style="display: flex; gap: 10px; align-items: center;">
+                            ${project.videoUrl ? `<a href="${project.videoUrl}" target="_blank" class="btn btn-outline" style="border-color: #ff0000; color: #ff0000;"><i class="fas fa-video"></i> Video İzle</a>` : ''}
+                            ${project.fileUrl ? `<a href="${project.fileUrl}" target="_blank" class="btn btn-outline" style="border-color: #10b981; color: #10b981;"><i class="fas fa-download"></i> Dosyayı İndir</a>` : ''}
+                            <button id="btn-like" class="btn btn-outline" style="margin-left: auto;">
+                                <i class="far fa-heart"></i> <span id="like-count">${project.likesCount || 0}</span> Beğeni
+                            </button>
+                        </div>
+                    </div>
+                    <img src="${project.imageUrl || 'https://via.placeholder.com/800x400'}" alt="${project.title}" class="detail-img mt-4">
+                    <div class="tags mt-4">
+                        ${(project.technologies || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                    </div>
+                    <div class="detail-content mt-4">
+                        <p>${project.description.replace(/\n/g, '<br>')}</p>
+                    </div>
+                    <div class="section-divider mt-5 mb-5"></div>
+                    <div class="comments-section pb-5">
+                        <h3>Yorumlar (<span id="comment-count">${project.commentsCount || 0}</span>)</h3>
+                        <div id="comment-form-container" class="mt-4 mb-4">
+                            <textarea id="comment-text" class="form-control" rows="3" placeholder="Yorumunuzu yazın..."></textarea>
+                            <button id="btn-add-comment" class="btn btn-primary mt-2">Yorum Yap</button>
+                        </div>
+                        <div id="comments-list" class="mt-4">
+                            <!-- Yorumlar buraya gelecek -->
+                        </div>
+                    </div>
+                `;
+                
+                // Beğeni Butonu İşlemi
+                const btnLike = document.getElementById('btn-like');
+                const likeCountEl = document.getElementById('like-count');
+                
+                listenAuthState(async (user) => {
+                    if (user) {
+                        try {
+                            const likeRef = doc(db, "likes", `${user.uid}_${project.id}`);
+                            const likeDoc = await getDoc(likeRef);
+                            if (likeDoc.exists()) {
+                                btnLike.classList.add('active');
+                                btnLike.querySelector('i').classList.replace('far', 'fas');
+                                btnLike.style.color = '#ef4444';
+                            }
+                        } catch (e) { console.error("Beğeni durumu kontrol edilemedi:", e); }
+                    }
+                });
+
+                btnLike.addEventListener('click', async () => {
+                    try {
+                        const isLiked = await toggleLike(project.id);
+                        const count = parseInt(likeCountEl.textContent);
+                        likeCountEl.textContent = isLiked ? count + 1 : count - 1;
+                        
+                        if (isLiked) {
+                            btnLike.querySelector('i').classList.replace('far', 'fas');
+                            btnLike.style.color = '#ef4444';
+                        } else {
+                            btnLike.querySelector('i').classList.replace('fas', 'far');
+                            btnLike.style.color = '';
+                        }
+                        showToast(isLiked ? "Beğenildi!" : "Beğeni kaldırıldı", "info");
+                    } catch (err) {
+                        showToast("Beğenmek için giriş yapmalısınız!", "error");
+                    }
+                });
+
+                // Yorumlar Listesi
+                const loadComments = async () => {
+                    const commentsList = document.getElementById('comments-list');
+                    const comments = await getProjectComments(project.id);
+                    commentsList.innerHTML = comments.length === 0 ? '<p class="text-center text-muted">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>' : '';
+                    comments.forEach(c => {
+                        const date = c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : 'Şimdi';
+                        commentsList.innerHTML += `
+                            <div class="comment-item fade-in">
+                                <div class="comment-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="comment-bubble glass">
+                                    <div class="comment-header">
+                                        <a href="profile.html?uid=${c.userId}" class="comment-author">${c.userName}</a>
+                                        <span class="comment-date">${date}</span>
+                                    </div>
+                                    <div class="comment-body">
+                                        <p>${c.text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                };
+                loadComments();
+
+                // Yorum Yapma
+                document.getElementById('btn-add-comment').addEventListener('click', async () => {
+                    const text = document.getElementById('comment-text').value;
+                    if(!text) return;
+                    try {
+                        await addComment(project.id, text);
+                        document.getElementById('comment-text').value = '';
+                        loadComments();
+                        const cCountEl = document.getElementById('comment-count');
+                        cCountEl.textContent = parseInt(cCountEl.textContent) + 1;
+                        showToast("Yorumunuz eklendi!", "success");
+                    } catch (err) {
+                        showToast("Yorum yapmak için giriş yapmalısınız!", "error");
+                    }
+                });
+            } catch (err) {
+                console.error("Proje yüklenirken hata:", err);
+                container.innerHTML = '<p>Proje yüklenemedi.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geliştirici Portföy</title>
+    <meta name="description" content="Modern ve dinamik tam yığın (full-stack) geliştirici portföyü.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html" class="active">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <li><a href="blog.html">Blog</a></li>
+                <!-- Dinamik Linkler Gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero glass fade-in">
+            <div class="hero-content">
+                <h1>Yazılım Dünyasının <span class="gradient-text">Yeni Buluşma Noktası</span></h1>
+                <p>Projelerini paylaş, ilham al ve topluluğa katıl. Herkes için açık kaynaklı vitrin.</p>
+                <div class="hero-buttons" id="hero-auth-btns">
+                    <a href="register.html" class="btn btn-primary">Hemen Kayıt Ol</a>
+                    <a href="projects.html" class="btn btn-outline">Projeleri Keşfet</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80" alt="Developer Workspace">
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Son Projeler</h2>
+            <div id="latest-projects" class="grid-container" aria-live="polite">
+                <!-- Projeler JS ile yüklenecek -->
+                <div class="loader">Yükleniyor...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer glass">
+        <div class="container">
+            <p>&copy; <span id="year"></span> Geliştirici Portföy. Tüm hakları saklıdır.</p>
+            <a href="admin.html" class="admin-link">Yönetici Paneli</a>
+        </div>
+    </footer>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module">
+        import { getLatestProjects } from './js/projects.js';
+        import { listenAuthState } from './js/auth.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Navbar ve Hero Dinamik Kontrol
+            const navLinks = document.getElementById('nav-links');
+            const heroBtns = document.getElementById('hero-auth-btns');
+
+            listenAuthState((user) => {
+                if(user) {
+                    heroBtns.innerHTML = `
+                        <a href="admin.html" class="btn btn-primary">Yeni Proje Paylaş</a>
+                        <a href="projects.html" class="btn btn-outline">Projeleri Keşfet</a>
+                    `;
+                } else {
+                    heroBtns.innerHTML = `
+                        <a href="register.html" class="btn btn-primary">Hemen Katıl ve Paylaş</a>
+                        <a href="projects.html" class="btn btn-outline">Projeleri Keşfet</a>
+                    `;
+                }
+            });
+
+            const container = document.getElementById('latest-projects');
+            try {
+                const projects = await getLatestProjects(3);
+                container.innerHTML = '';
+                if(projects.length === 0) {
+                    container.innerHTML = '<p>Henüz proje bulunmuyor.</p>';
+                    return;
+                }
+                
+                projects.forEach(p => {
+                    container.innerHTML += `
+                        <div class="card glass hover-up">
+                            <img src="${p.imageUrl || 'https://via.placeholder.com/400x250'}" alt="${p.title}" class="card-img">
+                            <div class="card-body">
+                                <h3>${p.title}</h3>
+                                <p style="font-size: 0.85rem; color: var(--primary-color); margin-top: -5px; margin-bottom: 10px;">Yükleyen: <a href="profile.html?uid=${p.authorId}" style="color: var(--primary-color); font-weight: 600;">${p.authorName || 'Anonim'}</a></p>
+                                <p>${p.description.substring(0, 100)}...</p>
+                                <div class="tags">
+                                    ${(p.technologies || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                                </div>
+                                <a href="project-detail.html?slug=${p.slug}" class="btn btn-outline btn-sm mt-3">Detaylar</a>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error("Projeler yüklenirken hata:", err);
+                container.innerHTML = '<p>Projeler yüklenemedi.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil | DevHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">Dev<span>Hub</span></a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Ana Sayfa</a></li>
+                <li><a href="projects.html">Projeler</a></li>
+                <!-- Dinamik linkler ui.js ile gelecek -->
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container page-content">
+        <section class="profile-header glass mt-5 text-center p-5">
+            <div class="profile-avatar mb-3" style="font-size: 4rem; color: var(--primary-color);">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <h1 id="profile-name" class="gradient-text">Yükleniyor...</h1>
+            <p id="profile-stats" class="text-muted">Profil verileri getiriliyor...</p>
+            <div id="connection-container" class="mt-4">
+                <!-- Bağlantı butonu buraya gelecek -->
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Kullanıcının Projeleri</h2>
+            <div id="user-projects" class="grid-container">
+                <div class="loader">Yükleniyor...</div>
+            </div>
+        </section>
+    </main>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+            }
+        }
+    </script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module">
+        import { getUserProjects, toggleConnection } from './js/projects.js';
+        import { db, auth } from './js/firebase.js';
+        import { doc, getDoc } from 'firebase/firestore';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const uid = urlParams.get('uid');
+
+            if (!uid) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const container = document.getElementById('user-projects');
+            const nameEl = document.getElementById('profile-name');
+            const statsEl = document.getElementById('profile-stats');
+            const connContainer = document.getElementById('connection-container');
+
+            try {
+                // Fetch user basic info
+                const projects = await getUserProjects(uid);
+                
+                if (projects.length > 0 || uid) {
+                    const authorName = projects.length > 0 ? (projects[0].authorName || 'İsimsiz Kullanıcı') : 'Kullanıcı';
+                    nameEl.textContent = authorName;
+                    statsEl.textContent = `${projects.length} Paylaşılan Proje`;
+
+                    // Bağlantı Butonu Mantığı
+                    if (auth.currentUser && auth.currentUser.uid !== uid) {
+                        const connId = `${auth.currentUser.uid}_${uid}`;
+                        const connDoc = await getDoc(doc(db, "connections", connId));
+                        let isConnected = connDoc.exists();
+
+                        const renderConnBtn = (connected) => {
+                            connContainer.innerHTML = `
+                                <button id="btn-toggle-connection" class="btn ${connected ? 'btn-outline' : 'btn-primary'}">
+                                    <i class="fas ${connected ? 'fa-user-check' : 'fa-user-plus'}"></i> 
+                                    ${connected ? 'Bağlantıyı Kes' : 'Bağlantı Kur'}
+                                </button>
+                            `;
+                            document.getElementById('btn-toggle-connection').addEventListener('click', async () => {
+                                try {
+                                    const nowConnected = await toggleConnection(uid);
+                                    renderConnBtn(nowConnected);
+                                } catch (err) {
+                                    alert(err.message);
+                                }
+                            });
+                        };
+                        renderConnBtn(isConnected);
+                    }
+                    
+                    container.innerHTML = projects.length === 0 ? '<p>Henüz proje paylaşmamış.</p>' : '';
+                    projects.forEach(p => {
+                        container.innerHTML += `
+                            <div class="card glass hover-up">
+                                <img src="${p.imageUrl || 'https://via.placeholder.com/400x250'}" alt="${p.title}" class="card-img">
+                                <div class="card-body">
+                                    <h3>${p.title}</h3>
+                                    <p>${p.description.substring(0, 100)}...</p>
+                                    <div class="tags">
+                                        ${(p.technologies || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                                    </div>
+                                    <a href="project-detail.html?slug=${p.slug}" class="btn btn-outline btn-sm mt-3">Detaylar</a>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    nameEl.textContent = "Kullanıcı Bulunamadı";
+                    statsEl.textContent = "Henüz projesi yok.";
+                    container.innerHTML = '<p>Bu kullanıcı henüz bir proje paylaşmamış.</p>';
+                }
+            } catch (err) {
+                console.error("Profil yükleme hatası:", err);
+                container.innerHTML = '<p>Veriler yüklenirken bir hata oluştu.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
