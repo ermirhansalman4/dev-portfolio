@@ -111,7 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const randomDesc = templates[Math.floor(Math.random() * templates.length)];
             document.getElementById('project-description').value = randomDesc;
         });
-        // Collaboration Tagging
+    }
+
+    // Collaboration Tagging
         const btnCollabSearch = document.getElementById('btn-collab-search');
         const collabSearchInput = document.getElementById('collab-search');
         const collabList = document.getElementById('collab-list');
@@ -263,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-    };
 
     // Helper Functions
     async function loadAdminProjects(uid) {
@@ -430,3 +431,4 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Dashboard verileri yüklenemedi:", e);
         }
     }
+});
