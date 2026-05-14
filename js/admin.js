@@ -2,7 +2,8 @@ import { listenAuthState, logout } from './auth.js';
 import { getUserProjects, addProject, deleteProject } from './projects.js';
 import { getUserPosts, addPost, deletePost } from './blog.js';
 import { db, auth } from './firebase.js';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { sendNotification } from './projects.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
@@ -110,7 +111,63 @@ document.addEventListener('DOMContentLoaded', () => {
             const randomDesc = templates[Math.floor(Math.random() * templates.length)];
             document.getElementById('project-description').value = randomDesc;
         });
+    // Collaboration Tagging
+    const btnCollabSearch = document.getElementById('btn-collab-search');
+    const collabSearchInput = document.getElementById('collab-search');
+    const collabList = document.getElementById('collab-list');
+    let selectedCollabs = [];
+
+    if(btnCollabSearch) {
+        btnCollabSearch.addEventListener('click', async () => {
+            const email = collabSearchInput.value.trim();
+            if(!email) return;
+            
+            btnCollabSearch.disabled = true;
+            btnCollabSearch.textContent = "...";
+
+            try {
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const snap = await getDocs(q);
+                
+                if(snap.empty) {
+                    showToast("Kullanıcı bulunamadı.", "error");
+                } else {
+                    const userData = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                    if(selectedCollabs.find(c => c.id === userData.id)) {
+                        showToast("Bu kişi zaten eklendi.", "info");
+                    } else if(userData.id === auth.currentUser.uid) {
+                        showToast("Kendinizi ortak olarak ekleyemezsiniz.", "info");
+                    } else {
+                        selectedCollabs.push(userData);
+                        renderCollabs();
+                        collabSearchInput.value = '';
+                        showToast(`${userData.displayName || userData.email} eklendi!`, "success");
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Arama sırasında hata oluştu.", "error");
+            } finally {
+                btnCollabSearch.disabled = false;
+                btnCollabSearch.textContent = "Ara";
+            }
+        });
     }
+
+    function renderCollabs() {
+        if(!collabList) return;
+        collabList.innerHTML = selectedCollabs.map(c => `
+            <span class="tag" style="background: rgba(59, 130, 246, 0.2); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px;">
+                ${c.displayName || c.email}
+                <i class="fas fa-times" style="cursor: pointer;" onclick="window.removeCollab('${c.id}')"></i>
+            </span>
+        `).join('');
+    }
+
+    window.removeCollab = (id) => {
+        selectedCollabs = selectedCollabs.filter(c => c.id !== id);
+        renderCollabs();
+    };
 
     if(formProject) {
         formProject.addEventListener('submit', async (e) => {
@@ -130,11 +187,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     fileUrl: document.getElementById('project-file-url').value,
                     technologies: document.getElementById('project-techs').value.split(',').map(t => t.trim()).filter(t => t),
                     githubUrl: document.getElementById('project-github').value,
-                    liveUrl: document.getElementById('project-live').value
+                    liveUrl: document.getElementById('project-live').value,
+                    collaborators: selectedCollabs.map(c => ({ id: c.id, name: c.displayName || c.email }))
                 };
 
-                await addProject(data);
+                const newProjectId = await addProject(data);
+                
+                // İş ortaklarına bildirim gönder
+                for(const collab of selectedCollabs) {
+                    await sendNotification(collab.id, {
+                        senderName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+                        message: `sizi "${data.title}" projesinde iş ortağı olarak etiketledi.`,
+                        link: `project-detail.html?slug=${data.slug || ''}`, // Slug henüz yoksa detail sayfasında slug ile arayacak
+                        type: 'tag'
+                    });
+                }
+
                 projectForm.style.display = 'none';
+                selectedCollabs = [];
+                renderCollabs();
                 formProject.reset();
                 const currentUser = auth.currentUser;
                 if(currentUser) loadAdminProjects(currentUser.uid);

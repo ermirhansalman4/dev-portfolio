@@ -86,9 +86,27 @@
                         </div>
                     </div>
                     <img src="${project.imageUrl || 'https://via.placeholder.com/800x400'}" alt="${project.title}" class="detail-img mt-4">
-                    <div class="tags mt-4">
+                    <div class="tags mb-4">
                         ${(project.technologies || []).map(t => `<span class="tag">${t}</span>`).join('')}
                     </div>
+
+                    ${project.collaborators && project.collaborators.length > 0 ? `
+                        <div class="collaborators mb-4">
+                            <h4 style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;">Geliştiriciler</h4>
+                            <div class="d-flex flex-wrap gap-3">
+                                <a href="profile.html?uid=${project.authorId}" class="collab-item glass p-2 d-flex align-center gap-2">
+                                    <i class="fas fa-user-circle"></i>
+                                    <span>${project.authorName || 'Proje Sahibi'}</span>
+                                </a>
+                                ${project.collaborators.map(c => `
+                                    <a href="profile.html?uid=${c.id}" class="collab-item glass p-2 d-flex align-center gap-2">
+                                        <i class="fas fa-user-circle"></i>
+                                        <span>${c.name}</span>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                     <div class="detail-content mt-4">
                         <p>${project.description.replace(/\n/g, '<br>')}</p>
                     </div>

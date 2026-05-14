@@ -236,8 +236,83 @@ ul { list-style: none; }
     font-weight: 500;
     transition: color 0.3s;
 }
-.nav-links a:hover, .nav-links a.active {
-    color: var(--primary-color);
+/* Notifications */
+.nav-item-relative { position: relative; }
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 50%;
+    font-weight: 700;
+}
+
+.noti-dropdown {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1001;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.noti-header {
+    padding: 15px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
+}
+
+.noti-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.noti-item:hover { background: rgba(59, 130, 246, 0.05); }
+.noti-item.unread { background: rgba(59, 130, 246, 0.02); border-left: 3px solid var(--primary-color); }
+
+.noti-item p { margin-bottom: 4px; }
+.noti-item small { opacity: 0.5; }
+
+/* Search Bar */
+.search-container {
+    max-width: 600px;
+    margin: 0 auto 40px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 15px 50px 15px 25px;
+    border-radius: 50px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.search-input:focus {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.search-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
 }
 
 /* Main */
@@ -365,6 +440,24 @@ main {
     color: #e2e8f0;
     font-size: 0.95rem;
     line-height: 1.5;
+}
+
+.collab-item {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.collab-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.collab-item i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
 }
 
 #comment-text {

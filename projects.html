@@ -23,6 +23,11 @@
 
     <main class="container page-content">
         <section class="section">
+            <div class="search-container fade-in">
+                <input type="text" id="search-projects" class="search-input" placeholder="Proje veya teknoloji ara...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            
             <div class="d-flex justify-between align-center mb-4">
                 <h2 class="section-title">Tüm Projeler</h2>
                 <div class="filter-group">
@@ -100,6 +105,24 @@
 
             filterSelect.addEventListener('change', (e) => loadProjects(e.target.value));
             loadProjects('popular');
+
+            // Arama İşlemi
+            const searchInput = document.getElementById('search-projects');
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const cards = document.querySelectorAll('.card');
+                
+                cards.forEach(card => {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const tags = card.querySelector('.tags').textContent.toLowerCase();
+                    
+                    if (title.includes(term) || tags.includes(term)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
         });
     </script>
 </body>

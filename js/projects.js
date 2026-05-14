@@ -69,6 +69,17 @@ export const toggleLike = async (projectId) => {
     } else {
         await setDoc(likeRef, { userId: user.uid, projectId, createdAt: serverTimestamp() });
         await updateDoc(projectRef, { likesCount: increment(1) });
+        
+        // Bildirim Gönder
+        const projectDoc = await getDoc(projectRef);
+        if (projectDoc.exists() && projectDoc.data().authorId !== user.uid) {
+            await sendNotification(projectDoc.data().authorId, {
+                senderName: user.displayName || user.email.split('@')[0],
+                message: `"${projectDoc.data().title}" projenizi beğendi.`,
+                link: `project-detail.html?slug=${projectDoc.data().slug}`,
+                type: 'like'
+            });
+        }
         return true; // Beğenildi
     }
 };
@@ -81,12 +92,24 @@ export const addComment = async (projectId, text) => {
     await addDoc(collection(db, "comments"), {
         projectId,
         userId: user.uid,
-        userName: user.displayName || "Anonim",
+        userName: user.displayName || user.email.split('@')[0],
         text,
         createdAt: serverTimestamp()
     });
     
-    await updateDoc(doc(db, collectionName, projectId), { commentsCount: increment(1) });
+    const projectRef = doc(db, collectionName, projectId);
+    await updateDoc(projectRef, { commentsCount: increment(1) });
+
+    // Bildirim Gönder
+    const projectDoc = await getDoc(projectRef);
+    if (projectDoc.exists() && projectDoc.data().authorId !== user.uid) {
+        await sendNotification(projectDoc.data().authorId, {
+            senderName: user.displayName || user.email.split('@')[0],
+            message: `projenize yorum yaptı: "${text.substring(0, 30)}..."`,
+            link: `project-detail.html?slug=${projectDoc.data().slug}`,
+            type: 'comment'
+        });
+    }
 };
 
 // Bağlantı Kur (Takip)
@@ -104,6 +127,14 @@ export const toggleConnection = async (targetUserId) => {
         return false;
     } else {
         await setDoc(connRef, { followerId: user.uid, followedId: targetUserId, createdAt: serverTimestamp() });
+        
+        // Bildirim Gönder
+        await sendNotification(targetUserId, {
+            senderName: user.displayName || user.email.split('@')[0],
+            message: `sizinle bağlantı kurdu.`,
+            link: `profile.html?uid=${user.uid}`,
+            type: 'connection'
+        });
         return true;
     }
 };
@@ -152,4 +183,23 @@ export const getProjectComments = async (projectId) => {
     const results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     // Hafızada sıralama (Endeks gerektirmez)
     return results.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+};
+
+// Bildirim Yardımcı Fonksiyonu
+export const sendNotification = async (recipientId, data) => {
+    if (!recipientId || recipientId === auth.currentUser?.uid) return;
+    try {
+        await addDoc(collection(db, "notifications"), {
+            recipientId,
+            senderId: auth.currentUser.uid,
+            senderName: data.senderName,
+            message: data.message,
+            link: data.link,
+            type: data.type,
+            isRead: false,
+            createdAt: serverTimestamp()
+        });
+    } catch (err) {
+        console.error("Bildirim gönderme hatası:", err);
+    }
 };

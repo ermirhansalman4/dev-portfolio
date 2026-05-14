@@ -1,5 +1,5 @@
 import { db } from './firebase.js';
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, where, orderBy, limit } from "firebase/firestore";
 import { listenAuthState } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,9 +51,23 @@ function setupNavbar() {
                 <li><a href="index.html" class="${isIndex ? 'active' : ''}">Ana Sayfa</a></li>
                 <li><a href="projects.html" class="${isProjects ? 'active' : ''}">Projeler</a></li>
                 <li><a href="blog.html" class="${isBlog ? 'active' : ''}">Blog</a></li>
+                <li class="nav-item-relative">
+                    <button id="noti-btn" class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                        <span id="noti-count" class="badge" style="display:none">0</span>
+                    </button>
+                    <div id="noti-dropdown" class="noti-dropdown glass" style="display:none">
+                        <div class="noti-header">Bildirimler</div>
+                        <div id="noti-list" class="noti-list">
+                            <p class="text-center p-3 text-muted">Bildirim yok</p>
+                        </div>
+                    </div>
+                </li>
                 <li><a href="admin.html" class="btn btn-primary btn-sm" style="color:white">Panelim</a></li>
                 <li><button id="theme-toggle-nav" class="icon-btn"><i class="fas fa-moon"></i></button></li>
             `;
+            // Bildirimleri dinle
+            initNotifications(user.uid);
         } else {
             navLinks.innerHTML = `
                 <li><a href="index.html" class="${isIndex ? 'active' : ''}">Ana Sayfa</a></li>
@@ -163,4 +177,52 @@ function initCustomCursor() {
     
     // Dinamik içerikler için (yorumlar vb.) periyodik kontrol
     setInterval(updateInteractiveElements, 2000);
+}
+
+// Real-time Notifications Listener
+function initNotifications(uid) {
+    const notiBtn = document.getElementById('noti-btn');
+    const notiDropdown = document.getElementById('noti-dropdown');
+    const notiCount = document.getElementById('noti-count');
+    const notiList = document.getElementById('noti-list');
+
+    if(!notiBtn) return;
+
+    notiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notiDropdown.style.display = notiDropdown.style.display === 'none' ? 'block' : 'none';
+        
+        // Bildirimleri okundu olarak işaretleme mantığı buraya eklenebilir
+    });
+
+    document.addEventListener('click', () => {
+        if(notiDropdown) notiDropdown.style.display = 'none';
+    });
+
+    // Firebase Listener
+    const q = query(collection(db, "notifications"), where("recipientId", "==", uid), orderBy("createdAt", "desc"), limit(20));
+    
+    onSnapshot(q, (snapshot) => {
+        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+
+        if (unreadCount > 0) {
+            notiCount.textContent = unreadCount;
+            notiCount.style.display = 'block';
+        } else {
+            notiCount.style.display = 'none';
+        }
+
+        if (notifications.length === 0) {
+            notiList.innerHTML = '<p class="text-center p-3 text-muted">Bildirim yok</p>';
+            return;
+        }
+
+        notiList.innerHTML = notifications.map(n => `
+            <div class="noti-item ${n.isRead ? '' : 'unread'}" onclick="window.location.href='${n.link || '#'}'">
+                <p><strong>${n.senderName}</strong> ${n.message}</p>
+                <small>${n.createdAt ? new Date(n.createdAt.seconds * 1000).toLocaleString('tr-TR') : 'Şimdi'}</small>
+            </div>
+        `).join('');
+    });
 }
